@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/oh_bnsf.css">
+		<script src="https://unpkg.com/@sassoftware/restaf@next/dist/restaf.min.js"></script> 
+		<script src="https://unpkg.com/@sassoftware/restaflib@next/dist/restaflib.min.js"></script>
+		<title>BNSF OH</title>
+		
+		<script>
+			let store = restaf.initStore({casProxy: true});
+		</script>
+</head>
+
+<body onload="initOH();">
+
+	<div class="container-fluid">
+		<div class="row">
+			<div id="status_message" class="col-sm-12"></div>
+		</div>
+		<div class="row">
+			<div class="col-sm-12">
+				<button type="button" style="margin-bottom: 10px;margin-top: 10px;" onclick="newScenario();" class="btn btn-primary btn-block">Create Scenario</button>
+			</div>
+			<div class="col-sm-12" id="scenario_list"></div>
+		</div>
+	</div>
+	
+	<div class="modal fade" id="scenario_settings_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<form role="form" id="ohScenarioSettingsForm" class="ohScenarioSettingsForm">
+					<div class="modal-header">
+						Scenario Settings
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-sm-12">
+								<input type="text" required style="margin-bottom: 10px;" maxlength="100" placeholder="Enter scenario name" class="form-control" name="scenario_name" id="scenario_name"/>
+							</div>
+							<div class="col-sm-12" id="scenario_settings"></div>
+						</div>
+						<input type="hidden" id="edit_scenario_id" name="edit_scenario_id" value=""/>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="submit" id="scenario_settings_button" class="btn btn-primary">Update and Run Scenario</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="confirm_scenario_delete_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form role="form" id="confirmScenarioDeleteForm" class="confirmScenarioDeleteForm">
+					<div class="modal-header">
+						Delete Selected Scenario
+					</div>
+					<div class="modal-body">
+						<div  class="alert alert-danger">
+							Are you sure you want to delete selected scenario?
+						</div>
+						<input type="hidden" id="delete_scenario_id" name="delete_scenario_id" value=""/>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-danger">Delete Scenario</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="confirm_scenario_freeze_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form role="form" id="confirmScenarioFreezeForm" class="confirmScenarioFreezeForm">
+					<div class="modal-header">
+						Freeze Selected Scenario
+					</div>
+					<div class="modal-body">
+						<div  class="alert alert-warning">
+							Are you sure you want to freeze the selected scenario?
+						</div>
+						<input type="hidden" id="freeze_scenario_id" name="freeze_scenario_id" value=""/>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-warning">Freeze Scenario</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>	
+
+
+	<script src="js/jquery-3.2.1.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/oh_bnsf.js"></script>
+	
+</body>
+
+</html>
