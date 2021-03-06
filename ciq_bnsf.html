@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/bnsf.css">
+		<script src="https://unpkg.com/restaf/dist/restaf.min.js"></script>
+		<title>CIQ Assessment Form</title>
+
+		<script>
+			let store = restaf.initStore({casProxy: true});
+		</script>
+
+	</head>
+
+	<body onload="loadSelectionData();">
+		<div class="container-fluid">
+			<div class="row">
+				<div id="status_message" class="col-sm-12">
+
+				</div>
+			</div>
+
+			<form id="assessmentform">
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="form-row">
+
+							<div class="col-md-3">
+								<label for="form_type">Form Type</label>
+								<select class="form-control" required onchange="loadQuestionKey(this.value);" id="form_type" name="form_type">
+									<option value="">Please select a form type</option>
+								</select>
+							</div>
+
+							<div class="col-md-3">
+								<label for="assessor">Assessor</label>
+								<select class="form-control" required onchange="loadAccessorType(this);loadAssessment();" id="assessor" name="assessor">
+									<option value="">Please select an assessor</option>
+								</select>								
+							</div>
+
+							<div class="col-md-3">
+								<label for="assessment_type">Assessment Type</label>
+								<input type="text" readonly class="form-control" id="assessment_type" name="assessment_type">
+							</div>
+
+							<div class="col-md-3">
+								<label for="form_date">Assessment Date</label>
+								<input type="date" required class="form-control" onchange="loadAssessment();" id="form_date" name="form_date">
+							</div>
+
+						</div>
+
+						<div class="form-row">
+
+							<div class="col-md-3">
+								<label for="cmo_select">CMO</label>
+								<select class="form-control" required onchange="loadSelections(this);loadAssessment();" id="cmo_select" name="cmo_select">
+									<option value="">Please select a CMO</option>
+								</select>
+							</div>
+
+							<div class="col-md-3">
+								<label for="division_select">Division</label>
+								<select class="form-control" required onchange="loadSelections(this);loadAssessment();" id="division_select" name="division_select">
+									<option value="">Please select a division</option>
+								</select>
+							</div>
+
+							<div class="col-md-3">
+								<label for="station_select">Station</label>
+								<select class="form-control" required onchange="validateStation(this);loadAssessment();" id="station_select" name="station_select">
+									<option value="">Please select a station</option>
+								</select>
+							</div>
+							
+							<div class="col-md-2">
+								<label for="station_select">Assessment Status</label>
+								<select class="form-control" onchange="changeAssessmentStatus(this);" id="assessment_status" name="assessment_status">
+									<option value="pending">New / In Progress</option>
+									<option value="approved">Approved Assessments</option>
+								</select>
+							</div>
+
+							<div class="col-md-1 align-self-end ml-auto">
+								<button type="button" id="approval_button" onclick="approveAssessment();" class="btn btn-primary btn-block" disabled>Approve Assessment</button>
+							</div>
+
+
+						</div>
+
+					</div>
+
+				</div>
+
+				<div id="question_div" style="margin-top: 20px;"></div>
+
+			</form>
+
+		</div>
+
+		<div class="modal fade" id="tcMaxForm" tabindex="-1" role="dialog">
+		  <div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">GAP Assessment Data Gathering</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span>
+				</button>
+			  </div>
+			  <div class="modal-body">
+				<div id="gapAssessmentError"></div>
+				<form id="gapAssessmentForm">
+
+					<div class="form-row">
+
+						<div class="col-md-3">
+							<label for="serial_select">Serial Number</label>
+							<select class="form-control" onchange="loadSerialNumber(this.value)" id="serial_select" name="serial_select">
+								<option value="">Select Serial Number</option>
+							</select>
+						</div>
+
+						<div class="col-md-2">
+							<label for="nsn_select">NSN</label>
+							<select class="form-control" onchange="loadNSNumber(this.value)" id="nsn_select" name="nsn_select">
+								<option value="">Select NSN</option>
+							</select>
+						</div>
+
+						<div class="col-md-3">
+							<label for="asset_date">Asset Date</label>
+							<input type="date" class="form-control" id="asset_date" name="asset_date" onchange="setGapInDate(this.value)">
+						</div>						
+
+						<div class="col-md-2">
+							<label for="in_date_select">In Date?</label>
+							<select class="form-control" id="in_date_select" name="in_date_select" disabled>
+								<option value="Yes">Yes</option>
+								<option value="No">No</option>
+							</select>
+						</div>		
+
+						<div class="col-md-2">
+							<label for="certification_select">Certification?</label>
+							<select class="form-control" id="certification_select" name="certification_select">
+								<option value="Pending">Pending</option>
+								<option value="Yes">Yes</option>
+								<option value="No">No</option>
+							</select>
+						</div>								
+
+						<div class="col-md-9">
+							<label for="assessment_comments">Comments</label>
+							<input type="text" class="form-control" maxlength="255" id="assessment_comments" name="assessment_comments"/>
+						</div>
+
+						<div class="col-md-3 d-flex flex-column">
+							<button type="button" class="btn btn-secondary btn-sm btn-block mt-auto" onclick="applyGapValues();">Apply</button>
+						</div>
+						
+						<div class="col-md-3">
+							<label for="tcmax_tracking">TCMax Tracking</label>
+							<p id="tcmax_tracking" style="font-weight:bold;"></p>
+						</div>
+						
+						<div class="col-md-3">
+							<label for="due_date">Due Date</label>
+							<p id="due_date" style="font-weight:bold;"></p>
+						</div>
+
+						<div class="col-md-3">
+							<label for="storage_location">Storage Location</label>
+							<p id="storage_location" style="font-weight:bold;"></p>
+						</div>
+
+						<div class="col-md-3">
+							<label for="asset_description">Asset Description</label>
+							<p id="asset_description" style="font-weight:bold;"></p>
+						</div>
+
+						
+					</div>
+					<input type="text" class="form-control" id="gap_question_key" name="gap_question_key" style="display:none"/>
+				</form>
+				
+				<div id="gapGageOne"></div>
+
+				<table class="table table-sm" id="gap_table"></table>
+				
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+
+		<div class="modal fade" id="approve_assessment_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<form role="form" id="approveAssessmentForm" class="approveAssessmentForm">
+						<div class="modal-header" id="approveAssessmentHeader"></div>
+						<div class="modal-body" id="approveAssessmentBody"></div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="submit" id="approveAssessmentButton" class="btn btn-secondary">Approve Assessment</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+
+		<script src="js/jquery-3.2.1.slim.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+		<script src="js/ciq_bnsf.js"></script>
+
+	</body>
+
+</html>
