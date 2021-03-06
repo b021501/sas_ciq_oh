@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bnsf-server
+  labels:
+    app: bnsf-server
+    app.kubernetes.io/part-of: bnsf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bnsf-server
+  template:
+    metadata:
+      labels:
+        app: bnsf-server
+        app.kubernetes.io/part-of: bnsf
+    spec:
+      initContainers:
+        - name: app-download
+          image: alpine/git:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - git config --global http.sslVerify "false" ;
+              git clone https://github.com/maperrsas/sas_ciq_oh.git /tmp/bnsf-data/ ;
+          volumeMounts:
+            - mountPath: /tmp/bnsf-data
+              name: bnsf-data
+      containers:
+        - name: bnsf-server
+          image: node:10-alpine
+          imagePullPolicy: IfNotPresent
+          workingDir: /tmp/bnsf-app
+          command: ["/bin/sh", "-c"]
+          args:
+            - npm install;
+              chown node:node . .;
+              node /tmp/bnsf-app/bin/www;
+          securityContext:
+            runAsUser: 1000
+          ports:
+            - containerPort: 3000
+              name: bnsf
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          volumeMounts:
+            - mountPath: /tmp/bnsf-app
+              name: bnsf-data
+      volumes:
+        - name: bnsf-data
+          emptyDir: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: bnsf-service
+  labels:
+    app: bnsf-service
+    app.kubernetes.io/part-of: bnsf
+spec:
+  ports:
+    - name: bnsf-port
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: bnsf-server
+
+---
