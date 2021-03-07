@@ -13,8 +13,7 @@ var currentSession;
 var viya_server = window.location.origin;
 //var viya_server = 'https://viya.sasviya.bnsf.com';
 
-var oh_lib = 'BNSF';
-//var oh_lib = 'LOCO_OH';
+var oh_lib = 'LOCO_OH';
 
 var oh_baseline_data = 'OH_SCENARIO_BASELINE';
 var oh_scenario_data = 'OH_SCENARIO';
