@@ -11,9 +11,7 @@ var currentSession;
 
 var viyahost = window.location.origin;
 //var viyahost = 'https://viya.sasviya.bnsf.com';
-
-var ciq_lib = 'BNSF';
-//var ciq_lib = 'CIQ';
+var ciq_lib = 'CIQ';
 
 var adp_data = 'ADP_DATA';
 var assessor_data = 'ASSESSORS';
