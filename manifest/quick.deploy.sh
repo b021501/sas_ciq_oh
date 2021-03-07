@@ -1,7 +1,8 @@
 #!/bin/bash
 # Apply bnsf_manifest.yaml to create the needed Deployment and Service
+# BNSF URL is viya.sasviya.bnsf.com (not sure what the namespace is. Guessing viya)
 
-kubectl -n big apply -f https://raw.githubusercontent.com/xavierBizoux/ddc-container/master/manifest/ddc_manifest.yaml
+kubectl -n viya apply -f https://raw.githubusercontent.com/maperrsas/sas_ciq_oh/main/manifest/bnsf_manifest.yaml
 
 # Create a manifest to define the Ingress resource
 cat << EOF > /tmp/bnsf-ingress.yaml
@@ -14,7 +15,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: big.$(hostname -f)
+    - host: viya.$(hostname -f)
       http:
         paths:
           - backend:
@@ -24,7 +25,7 @@ spec:
 EOF
 
 # Apply the newly yaml file
-kubectl apply -f /tmp/bnsf-ingress.yaml -n big
+kubectl apply -f /tmp/bnsf-ingress.yaml -n viya
 
 # Print the URL of the web application
-printf "URL for BNSF ingress: http://big.$(hostname -f)/bnsf \n"
+printf "URL for BNSF ingress: http://viya.$(hostname -f)/bnsf \n"
