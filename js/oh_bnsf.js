@@ -529,9 +529,9 @@ async function runScenario(scenario_id){
 	code += 'where scenario_id="&scenario_id";';
 	code += 'by scenario_desc oh_report_group entry_date;if last.oh_report_group;';
 	code += 'run;';
-	//code += 'filename mdlfldr filesrvc folderpath = "/BI_Projects/Mechanical/Locomotive/Models";';
-	//code += '%include mdlfldr("macro_nextOhSchedule.sas");';
-	//code += '%model_nextOhSchedule(in_engSummary = ' + oh_lib + '.abt_engineChangeoutSummary,scenario_config = ' + oh_lib + '._&scenario_id,out_nextoh = casuser.temp_scenario_nextOh);';
+	code += 'filename mdlfldr filesrvc folderpath = "/BI_Projects/Mechanical/Locomotive/Models";';
+	code += '%include mdlfldr("macro_nextOhSchedule.sas");';
+	code += '%model_nextOhSchedule(in_engSummary = ' + oh_lib + '.abt_engineChangeoutSummary,scenario_config = ' + oh_lib + '._&scenario_id,out_nextoh = casuser.temp_scenario_nextOh);';
 
 	let computeSummary = await computeRun(
 		store,
