@@ -15,7 +15,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: viya.$(hostname -f)
+    - host: viya.sasviya.bnsf.com
       http:
         paths:
           - backend:
@@ -28,4 +28,4 @@ EOF
 kubectl apply -f /tmp/bnsf-ingress.yaml -n viya
 
 # Print the URL of the web application
-printf "URL for BNSF ingress: http://viya.$(hostname -f)/bnsf \n"
+printf "URL for BNSF ingress: http://viya.sasviya.bnsf.com/bnsf \n"
