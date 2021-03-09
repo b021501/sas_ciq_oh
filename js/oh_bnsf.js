@@ -17,6 +17,7 @@ var oh_lib = 'LOCO_OH';
 
 var oh_baseline_data = 'OH_SCENARIO_BASELINE';
 var oh_scenario_data = 'OH_SCENARIO';
+var oh_model_out_data = 'ABT_NEXTOHSCHEDULE';
 
 var scenario_user;
 var oh_baseline_list = [];
@@ -188,6 +189,15 @@ $("#confirmScenarioDeleteForm").submit(function( event ) {
 	store.runAction(currentSession, deletePayload).then ( r => {
 		loadSavedScenarios();
 		$('#confirm_scenario_delete_modal').modal('hide');
+		
+		var modelFilter ='scenario_id="' + $("#delete_scenario_id").val() + '"';
+		delete_model_rows={'table': { 'name': oh_model_out_data, 'caslib': oh_lib, 'where': modelFilter}};
+		let deleteModelPayload = {
+			action: 'table.deleteRows',
+			data  : delete_model_rows
+		}
+		store.runAction(currentSession, deleteModelPayload).then ( r => {}).catch(err => handleError(err))
+		
 	}).catch(err => handleError(err))
 
 });
@@ -531,7 +541,7 @@ async function runScenario(scenario_id){
 	code += 'run;';
 	code += 'filename mdlfldr filesrvc folderpath = "/BI_Projects/Mechanical/Locomotive/Models";';
 	code += '%include mdlfldr("macro_nextOhSchedule.sas");';
-	code += '%model_nextOhSchedule(in_engSummary = ' + oh_lib + '.abt_engineChangeoutSummary,scenario_config = ' + oh_lib + '._&scenario_id,out_nextoh = casuser.temp_scenario_nextOh);';
+	code += '%model_nextOhSchedule(in_engSummary = ' + oh_lib + '.abt_engineChangeoutSummary,scenario_config = ' + oh_lib + '._&scenario_id,out_nextoh = ' + oh_lib + '.' + oh_model_out_data + ');';
 
 	let computeSummary = await computeRun(
 		store,
