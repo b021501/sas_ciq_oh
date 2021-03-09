@@ -1121,7 +1121,7 @@ function loadSerialNumber(serialNumber){
 
 	$("#gapAssessmentError").empty();
 	
-	params_query={'query': 'select distinct barcodeid, put(duedate, yymmdd10.), storageLocation, name from ' + ciq_lib + '.' + tc_max_data + ' WHERE SerialNumber=\'' + serialNumber + '\' and ShopCode=\'' + getStation() + '\''};
+	params_query={'query': 'select distinct barcodeid, put(cast(duedate as date), yymmdd10.), storageLocation, name from ' + ciq_lib + '.' + tc_max_data + ' WHERE SerialNumber=\'' + serialNumber + '\' and ShopCode=\'' + getStation() + '\''};
 	let payload = {
 		action: 'fedSql.execDirect',
 		data  : params_query
@@ -1152,7 +1152,7 @@ function loadNSNumber(nsnNumber){
 	
 	$("#gapAssessmentError").empty();
 	
-	params_query={'query': 'select distinct barcodeid, put(duedate, yymmdd10.), storageLocation, name from ' + ciq_lib + '.' + tc_max_data + ' WHERE itemId=\'' + nsnNumber + '\' and ShopCode=\'' + getStation() + '\''};
+	params_query={'query': 'select distinct barcodeid, put(cast(duedate as date), yymmdd10.), storageLocation, name from ' + ciq_lib + '.' + tc_max_data + ' WHERE itemId=\'' + nsnNumber + '\' and ShopCode=\'' + getStation() + '\''};
 	let payload = {
 		action: 'fedSql.execDirect',
 		data  : params_query
