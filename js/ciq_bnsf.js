@@ -13,6 +13,8 @@ var viyahost = window.location.origin;
 //var viyahost = 'https://viya.sasviya.bnsf.com';
 var ciq_lib = 'CIQ';
 
+var ciq_user;
+
 var adp_data = 'ADP_DATA';
 var assessor_data = 'ASSESSORS';
 var question_key = 'QUESTION_KEY';
@@ -46,6 +48,11 @@ async function appInit(){
     let servers = await store.apiCall(casManagement.links('servers'));
     let serverName = servers.itemsList(0);
     let session = await store.apiCall(servers.itemsCmd(serverName, 'createSession'));
+	
+	let { identities } = await store.addServices('identities');
+    let c = await store.apiCall(identities.links('currentUser'));
+	ciq_user = c.items('id');
+		
     return session;
 }
 
@@ -811,23 +818,10 @@ function displayFormQuestions(){
 
 /**
 *
-*	Determines the correct review question header - top 4 questions 1)Gage/Instrument Inspections --> 4)TCMax
-*
-**/
-function getReviewHeader(topic){
-	if(topic == '4. TCMax'){
-		return getReviewHeaderTCMax(topic);
-	}else{
-		return getReviewHeaderNonTCMax(topic);
-	}
-}
-
-/**
-*
 *	Header for questions 1-3 (not 4)TCMax)
 *
 **/
-function getReviewHeaderNonTCMax(topic){
+function getReviewHeader(topic){
 
 	var header = '';
 	header += "<tr class='tblbackground'>";
@@ -848,50 +842,16 @@ function getReviewHeaderNonTCMax(topic){
 
 /**
 *
-*	Header for TCMax (no numeric values sample, eqp_ood, etc..)
-*
-**/
-function getReviewHeaderTCMax(topic){
-
-	var header = '';
-	header += "<tr class='tblbackground'>";
-	header += "<td width='15%' colspan=2 class='tbloutline tblvcenter tblheader'>" + topic + "</td>";
-	header += "<td width='15%' colspan=4 class='tbloutline tblcenter tblvcenter tblheader'>Findings</td>";
-	header += "<td width='10%' colspan=2 class='tbloutline tblcenter tblvcenter tblheader'>Corrective Action</td>";
-	header += "<td width='10%' colspan=2 class='tbloutline tblcenter tblvcenter tblheader'>Champion</td>";
-	header += "<td width='10%' class='tbloutline tblcenter tblvcenter tblheader'>Timeframe</td>";
-	header += "</tr>";
-
-	return header;
-}
-
-/**
-*
-*	Get the rows for questions 1-4
-*
-**/
-function getReviewRow(question){
-	var question_id = question[5];
-	if(question_id == 'loco_tc_max_1' || question_id == 'car_tc_max_1'){
-		return getReviewRowTCMax(question);
-	}else{
-		return getReviewRowNonTCMax(question);
-	}
-	
-}
-
-/**
-*
 *	Rows for questions 1-3 (not 4)TCMax)
 *
 **/
-function getReviewRowNonTCMax(question){
+function getReviewRow(question){
 	
 	var question_id = question[5];
 	var row = '';
 	
 	row += "<tr>";
-	row += "<td width='15%' class='tbloutline tblvcenter'>" + question[8] + "</td>";
+	row += "<td width='15%' class='tbloutline tblvcenter'>" + question[7] + "</td>";
 	row += "<td width='5%' class='tbloutline tblvcenter' align='center'><button type='button' id=\"gap_button_" + question_id + "\" class='btn btn-outline-secondary' onclick='loadTCMaxForm(\"" + question_id + "\", \"" + question[7] + "\")'><img src='images/form.png'/></button></td>";
 	row += "<td width='5%' class='tbloutline tblcenter tblvcenter'><input id='" + question_id + "_sample' name='" + question_id + "_sample' type='number' disabled step='1' value='0' min='0' class='numspinner'/></td>";
 	row += "<td width='5%' class='tbloutline tblcenter tblvcenter'><input id='" + question_id + "_equipment_ood' name='" + question_id + "_equipment_ood' type='number' disabled step='1' value='0' min='0' class='numspinner'/></td>";
@@ -901,27 +861,6 @@ function getReviewRowNonTCMax(question){
 	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_findings' id='" + question_id + "_findings'></textarea></td>";
 	row += "<td width='10%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_corrective_action' id='" + question_id + "_corrective_action'></textarea></td>";
 	row += "<td width='10%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_champion' id='" + question_id + "_champion'></textarea></td>";
-	row += "<td width='10%' class='tbloutline tblcenter tblvcenter'><input type='date' class='form-control' onchange='dataChange(this);' id='" + question_id + "_timeframe' name='" + question_id + "_timeframe'></td>";
-	row += "</tr>";
-
-	return row;
-	
-}
-
-/**
-*
-*	Row for TCMax (no numeric values sample, eqp_ood, etc..)
-*
-**/
-function getReviewRowTCMax(question){
-	var question_id = question[5];
-	var row = '';
-	
-	row += "<tr>";
-	row += "<td width='15%' colspan=2 class='tbloutline tblvcenter'>" + question[8] + "</td>";
-	row += "<td width='15%' colspan=4 class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_findings' id='" + question_id + "_findings'></textarea></td>";
-	row += "<td width='10%' colspan=2 class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_corrective_action' id='" + question_id + "_corrective_action'></textarea></td>";
-	row += "<td width='10%' colspan=2 class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_champion' id='" + question_id + "_champion'></textarea></td>";
 	row += "<td width='10%' class='tbloutline tblcenter tblvcenter'><input type='date' class='form-control' onchange='dataChange(this);' id='" + question_id + "_timeframe' name='" + question_id + "_timeframe'></td>";
 	row += "</tr>";
 
@@ -960,20 +899,15 @@ function getComplianceRow(question){
 
 	var row = '';
 	var question_id = question[5];
-	var required = '';
-	var checked = '';
-	if(question[5] == 1){
-		required='required';
-		checked='checked';
-	}
+
 	row += "<tr>";
-	row += "<td width='15%' colspan=2 class='tbloutline tblvcenter'>" + question[8] + "</td>";
-	row += "<td width='5%' colspan=3 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' " + checked + " value='compliance' class='form-control' type='radio' onclick='toggleRadio(this);'></td>";
+	row += "<td width='15%' colspan=2 class='tbloutline tblvcenter'>" + question[7] + "</td>";
+	row += "<td width='5%' colspan=3 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='compliance' class='form-control' type='radio' onclick='toggleRadio(this);'></td>";
 	row += "<td width='5%' colspan=2 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='opportunity' class='form-control' type='radio' onclick='toggleRadio(this);'></td>";
-	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' " + required + " onchange='dataChange(this);' name='" + question_id + "_findings' id='" + question_id + "_findings'></textarea></td>";
-	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' " + required + " onchange='dataChange(this);' name='" + question_id + "_corrective_action' id='" + question_id + "_corrective_action'></textarea></td>";
-	row += "<td width='10%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' " + required + " onchange='dataChange(this);' name='" + question_id + "_champion' id='" + question_id + "_champion'></textarea></td>";
-	row += "<td width='10%' class='tbloutline tblcenter tblvcenter'><input type='date' " + required + " class='form-control' onchange='dataChange(this);' id='" + question_id + "_timeframe' name='" + question_id + "_timeframe'></td>";
+	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_findings' id='" + question_id + "_findings'></textarea></td>";
+	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_corrective_action' id='" + question_id + "_corrective_action'></textarea></td>";
+	row += "<td width='10%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_champion' id='" + question_id + "_champion'></textarea></td>";
+	row += "<td width='10%' class='tbloutline tblcenter tblvcenter'><input type='date' class='form-control' onchange='dataChange(this);' id='" + question_id + "_timeframe' name='" + question_id + "_timeframe'></td>";
 	row += "</tr>";
 
 	return row;
@@ -1083,19 +1017,24 @@ function loadTCMaxForm(key){
 			$('#storage_location').empty();
 			$('#asset_description').empty();
 			$("#assessment_comments").val('');
-						
+			
 			$('#serial_select').append('<option value="MISSING">Missing Serial</option>');
 			$('#nsn_select').append('<option value="MISSING">Missing NSN</option>');
 			
 			for(var i=0; i < tc_max_result.length; i++) {
-				if(tc_max_result[i][0] != '')
+
+				var serialNumber = tc_max_result[i][0];
+				var nsNumber = tc_max_result[i][1];
+				
+				if(serialNumber.toString().trim() != '')
 					$('#serial_select').append('<option value="' + tc_max_result[i][0] + '">' + tc_max_result[i][0] + '</option>');
 				
-				if(tc_max_result[i][1] != '')
+				if(nsNumber.toString().trim() != '')
 					$('#nsn_select').append('<option value="' + tc_max_result[i][1] + '">' + tc_max_result[i][1] + '</option>');
 				
 				
 			}
+			gapReadyToSubmit(false);
 			
 		}).catch(err => handleError(err))
 
@@ -1204,7 +1143,7 @@ function loadAssetDetail(assetDetail){
 	$('#storage_location').empty().append(assetDetail[2]);
 	$('#asset_description').empty().append(assetDetail[3]);
 	$('#certification_select').prop('selectedIndex',0);
-	
+	gapReadyToSubmit(true);
 	
 }
 
@@ -1450,6 +1389,7 @@ function loadGapFormValues(gap){
 	$('#due_date').empty().append(gap.due_date);
 	$('#storage_location').empty().append(gap.location);
 	$('#asset_description').empty().append(gap.description);
+	gapReadyToSubmit(true);
 	
 }
 
@@ -1470,6 +1410,26 @@ function resetTCMaxForm(){
 	$('#due_date').empty();
 	$('#storage_location').empty();
 	$('#asset_description').empty();
+	gapReadyToSubmit(false);
+	
+}
+
+/**
+*
+*	Toggles the Apply Gap button. Without this it would be possible to apply all blank values
+*
+**/
+function gapReadyToSubmit(isready){
+
+	if(isready){
+		
+		$('#applyGapButton').prop('disabled', false);
+		
+	}else{
+		
+		$('#applyGapButton').prop('disabled', true);
+		
+	}
 	
 }
 
@@ -1554,18 +1514,31 @@ function calculateGapValues(gap_entries, question_key){
 	/* This logic performs the calculations of sample, ood's missing certs, and total exceptions */	
 	for(var i=0; i < gap_entries.length; i++){
 		var gap = gap_entries[i];
+		
+		//Calculate certification missing
 		if(gap.in_cert == 'No'){
 			certMissing++;
 			exceptions++;
-		}	
+		}
+
+		//Calculate if eqp in date
 		if(gap.in_date == 'No'){
 			equipmentOOD++;
 			exceptions++;
-		}	
+		}
+			
+		//If serial or NSN missing increment tracker OOD	
 		if(gap.serial == 'MISSING' || gap.nsn == 'MISSING'){
 			trackerOOD++;
 			exceptions++;
-		}	
+		}
+		
+		//If due date and asset date do not match increment tracker OOD
+		if(getJSDate(gap.due_date).getTime() !== getJSDate(gap.asset_date).getTime()){
+			trackerOOD++;
+			exceptions++;			
+		}
+		
 	}
 	
 	//2) Compare them to the assessment values
@@ -1626,6 +1599,16 @@ function isReadyForApproval(){
 
 /**
 *
+*	Approve an assessment. Will validate all rules are met and then display the confirmation dialog
+*
+**/
+async function approveAssessment(){
+	if(await validateAssessment())
+		displayAssessmentConfirmDialog();
+}
+
+/**
+*
 *	This code determines if an assessment is ready to be approved. Several rules currently
 *	1) Validate that at least one row of data has been entered for the assessment
 *	2) Make sure all Gap assets have a yes/no for certifications available
@@ -1633,71 +1616,103 @@ function isReadyForApproval(){
 *	4) Display confirmation dialog and require name and date to be entered
 *
 **/
-function approveAssessment(){
+async function validateAssessment(){
 		
-	//1) Make sure we have some data saved for this form. Query the dataset
+	//1) Make sure the form has data
+	if(await doesFormContainData()){
+		
+		//2) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are
+		pendingGaps = await getPendingCertifications();
+		if(pendingGaps.length == 0){
+			
+			//If form type is Loco, no need to worry about Rule 1 Gages
+			if(getFormType() == 'Loco'){
+				
+				return true;
+				
+			}else{
+				
+				//3) Rule 1 Gages requirement
+				gageOneCount = await getGageOneCount();
+				if(gageOneCount !== rule_one_gage_min){
+					displayRuleGageErrorDialog(gageOneCount);
+					return false;
+				}else{
+					return true;
+				}
+				
+			}
+	
+		}else{
+			
+			displayPendingCertsDialog(pendingGaps);
+			return false;
+			
+		}
+		
+	}else{
+		
+		displayNoAssessmentDataDialog();
+		return false;
+		
+	}
+
+}
+
+/**
+*
+*	Determine if the assessment form has data entered
+*
+**/
+async function doesFormContainData(){
+	
 	count_query={'query': 'select count(*) from ' + ciq_lib + '.' + ciq_results + ' WHERE form_key=\'' + getFormKey() + '\' AND assessment_approved=0'};
 	let payload = {
 		action: 'fedSql.execDirect',
 		data  : count_query
 	}
-
-	store.runAction(currentSession, payload).then ( r => {
-		assessmentCount = r.items('results', 'Result Set').toJS().rows[0][0];
-		if(assessmentCount > 0){
-			
-			//2) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are...
-
-			cert_query={'query': 'select question_key, in_cert, serial, nsn, tracking_id from ' + ciq_lib + '.' + ciq_gap_inputs + ' where form_key=\'' + getFormKey() + '\' and in_cert=\'Pending\''};
-			let payload = {
-				action: 'fedSql.execDirect',
-				data  : cert_query
-			}
-			
-			store.runAction(currentSession, payload).then ( r => {
-				pendingGaps = r.items('results', 'Result Set').toJS().rows;
-
-
-				if(pendingGaps.length == 0){
-					
-					//If form type is Loco, no need to worry about Rule 1 Gages
-					if(getFormType() == 'Loco'){
-						displayAssessmentConfirmDialog();
-					}else{
-
-						//3) Rule 1 Gages requirement
-						gage_one_query={'query': 'select count(*) from ' + ciq_lib + '.' + ciq_gap_inputs + ' WHERE form_key=\'' + getFormKey() + '\' AND question_key=\'car_gage_1\''};
-						let payload = {
-							action: 'fedSql.execDirect',
-							data  : gage_one_query
-						}
-						store.runAction(currentSession, payload).then ( r => {
-							gageOneCount = r.items('results', 'Result Set').toJS().rows[0][0];
-							console.log('Gage count: ' + gageOneCount);
-							if(gageOneCount < rule_one_gage_min){
-								displayRuleGageErrorDialog(gageOneCount);
-							}else{
-								displayAssessmentConfirmDialog();
-							}
-						}).catch(err => handleError(err))
-
-					}
-			
-				}else{
-					displayPendingCertsDialog(pendingGaps);
-				}
-				
-			}).catch(err => handleError(err))
-			
-		}else{
-			
-			//No data to approve
-			displayNoAssessmentDataDialog();
-		}
-		
-	}).catch(err => handleError(err))
 	
+	let records = await store.runAction(currentSession, payload);
+	if(records.items('results', 'Result Set').toJS().rows[0][0] > 0)
+		return true;
+	else
+		return false;
+
+}
+
+/**
+*
+*	Determine if all certificates have been accounted for. Should all be yes/no. No pendings.
+*
+**/
+async function getPendingCertifications(){
+
+	cert_query={'query': 'select question_key, in_cert, serial, nsn, tracking_id from ' + ciq_lib + '.' + ciq_gap_inputs + ' where form_key=\'' + getFormKey() + '\' and in_cert=\'Pending\''};
+	let payload = {
+		action: 'fedSql.execDirect',
+		data  : cert_query
+	}
 	
+	let records = await store.runAction(currentSession, payload);
+	return records.items('results', 'Result Set').toJS().rows;
+
+}
+
+/**
+*
+*	Determine current Gage One counts
+*
+**/
+async function getGageOneCount(){
+
+	gage_one_query={'query': 'select count(*) from ' + ciq_lib + '.' + ciq_gap_inputs + ' WHERE form_key=\'' + getFormKey() + '\' AND question_key=\'car_gage_1\''};
+	let payload = {
+		action: 'fedSql.execDirect',
+		data  : gage_one_query
+	}
+	
+	let records = await store.runAction(currentSession, payload);
+	return records.items('results', 'Result Set').toJS().rows[0][0];
 }
 
 /**
@@ -1714,7 +1729,7 @@ function displayAssessmentConfirmDialog(){
 	var html = '<div class="alert alert-warning">Please confirm the assessment approval by entering your name and todays date below</div>';
 	
 	html += '<div class="form-row">';
-	html += '<div class="col-md-6"><label for="approved_by">Approved By</label><input required type="text" maxlength="50" class="form-control" id="approved_by" name="approved_by"/></div>';
+	html += '<div class="col-md-6"><label for="approved_by">Approved By</label><input readonly type="text" maxlength="50" class="form-control" id="approved_by" name="approved_by" value="' + ciq_user +'"/></div>';
 	html += '<div class="col-md-6"><label for="date_approved">Approved Date</label><input required type="date" class="form-control" id="date_approved" name="date_approved"></div>';
 	html += '</div>';
 	
@@ -1780,9 +1795,7 @@ function displayPendingCertsDialog(pendingGaps){
 	}
 	tableHtml += '</tbody>';
 	tableHtml += '</table>';
-	
-	console.log(tableHtml);
-	
+		
 	$('#approveAssessmentBody').empty().append(tableHtml);
 	$('#approve_assessment_modal').modal('show');
 	
@@ -1798,7 +1811,7 @@ function displayRuleGageErrorDialog(currentCount){
 	$('#approveAssessmentButton').prop('disabled', true);
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Rule 1 Gages');
-	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">Rule 1 Gages require at least ' + rule_one_gage_min + ' unique assets. Only ' + currentCount + ' have been entered.</div>');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">Rule 1 Gages require ' + rule_one_gage_min + ' unique assets. ' + currentCount + ' have been entered.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }
