@@ -70,7 +70,7 @@ async function appInit(){
 **/
 function loadBaselineData(){
 
-	params_query={'query': 'select * from ' + oh_lib + '.' + oh_baseline_data};
+	params_query={'query': 'select * from ' + oh_lib + '.' + oh_baseline_data + ' order by oh_cost_per_loco desc'};
 	let payload = {
 		action: 'fedSql.execDirect',
 		data  : params_query
