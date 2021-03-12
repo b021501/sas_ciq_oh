@@ -902,8 +902,8 @@ function getComplianceRow(question){
 
 	row += "<tr>";
 	row += "<td width='15%' colspan=2 class='tbloutline tblvcenter'>" + question[7] + "</td>";
-	row += "<td width='5%' colspan=3 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='compliance' class='form-control' type='radio' onclick='toggleRadio(this);'></td>";
-	row += "<td width='5%' colspan=2 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='opportunity' class='form-control' type='radio' onclick='toggleRadio(this);'></td>";
+	row += "<td width='5%' colspan=3 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='compliance' class='form-control' type='radio'></td>";
+	row += "<td width='5%' colspan=2 class='tbloutline tblcenter tblvcenter'><input name='" + question_id + "_check' onchange='dataChange(this);' id='" + question_id + "_check' value='opportunity' class='form-control' type='radio'></td>";
 	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_findings' id='" + question_id + "_findings'></textarea></td>";
 	row += "<td width='15%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_corrective_action' id='" + question_id + "_corrective_action'></textarea></td>";
 	row += "<td width='10%' class='tbloutline tblcenter tblvtop'><textarea maxlength='255' onchange='dataChange(this);' name='" + question_id + "_champion' id='" + question_id + "_champion'></textarea></td>";
@@ -912,26 +912,6 @@ function getComplianceRow(question){
 
 	return row;
 
-}
-
-/**
-*
-*	Special request. Radio button could be selected by accident. A second selection needs to completly remove the radio check.
-*
-**/
-function toggleRadio(thisradio){
-	var secondClick = true;
-	$(thisradio).change(function() {
-		secondClick = false;
-		$(thisradio).prop("checked", true);
-	});
-	$(thisradio).click(function() {
-		if (secondClick) {
-			$(thisradio).prop("checked", false);
-			dataChange(thisradio, true);
-		}
-		secondClick = true;
-	});
 }
 
 /**
@@ -1055,8 +1035,14 @@ function loadTCMaxForm(key){
 function loadSerialNumber(serialNumber){
 
 	//If missing is selected, TCMax does not contain the asset
-	if(serialNumber == '' || serialNumber == 'MISSING')
+	if(serialNumber == ''){
+		gapReadyToSubmit(false);
 		return;
+	}else if(serialNumber == 'MISSING'){
+		gapReadyToSubmit(true);
+		return;
+	}
+		
 
 	$("#gapAssessmentError").empty();
 	
@@ -1086,8 +1072,13 @@ function loadSerialNumber(serialNumber){
 function loadNSNumber(nsnNumber){
 	
 	//If missing is selected, TCMax does not contain the asset
-	if(nsnNumber == '' || nsnNumber == 'MISSING')
+	if(nsnNumber == ''){
+		gapReadyToSubmit(false);
 		return;
+	}else if(nsnNumber == 'MISSING'){
+		gapReadyToSubmit(true);
+		return;
+	}	
 	
 	$("#gapAssessmentError").empty();
 	
@@ -1588,10 +1579,13 @@ function isReadyForApproval(){
 	if(isFormComplete() && getAssessmentStatus() == 'pending'){
 		
 		$('#approval_button').prop('disabled', false);
+		$('#validate_button').prop('disabled', false);
+		
 		
 	}else{
 		
 		$('#approval_button').prop('disabled', true);
+		$('#validate_button').prop('disabled', true);
 		
 	}
 
@@ -1607,53 +1601,81 @@ async function approveAssessment(){
 		displayAssessmentConfirmDialog();
 }
 
+async function checkRequiredFields(){
+	
+	if(await validateAssessment()){
+		console.log('Form Complete');
+	}
+	
+}
+
 /**
 *
 *	This code determines if an assessment is ready to be approved. Several rules currently
-*	1) Validate that at least one row of data has been entered for the assessment
-*	2) Make sure all Gap assets have a yes/no for certifications available
-*	3) Enforce a selection of 21 assets for Rule-1 Gages
-*	4) Display confirmation dialog and require name and date to be entered
+*	The general flow is 
+*	1) A rule is checked 
+*	2) If the rule fails a specific message is displayed to the user 
+*	3) If the rule passes, it goes on to the next rule
+*	4) Keeps going until all rules are satisfied
 *
 **/
 async function validateAssessment(){
+	
+	//RULE 1) Make sure compliance and opportunities have all been selected
+	var missingSelections = missingComplianceSelections();
+	if(missingSelections == 0){
 		
-	//1) Make sure the form has data
-	if(await doesFormContainData()){
-		
-		//2) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are
-		pendingGaps = await getPendingCertifications();
-		if(pendingGaps.length == 0){
+		//RULE 2) If something is marked as compliance, it needs the findings completed
+		var missingComplianceCount = missingComplianceFindings();
+		if(missingComplianceCount == 0){
+
+			//RULE 3) If something is marked as opportunity, it needs findings, corrective action, champion, and timeframe completed
+			var missingOpportunityCount = missingOpportunityFields();
+			if(missingOpportunityCount == 0){
+
+				//RULE 4) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are
+				pendingGaps = await getPendingCertifications();
+				if(pendingGaps.length == 0){
+					
+					//If form type is Loco, no need to worry about Rule 1 Gages
+					if(getFormType() == 'Loco'){
+						
+						return true;
+						
+					}else{
+						
+						//RULE 5) Rule 1 Gages requirement (see global variable rule_one_gage_min
+						gageOneCount = await getGageOneCount();
+						if(gageOneCount !== rule_one_gage_min){
+							displayRuleGageErrorDialog(gageOneCount);
+							return false;
+						}else{
+							return true;
+						}
+						
+					}
 			
-			//If form type is Loco, no need to worry about Rule 1 Gages
-			if(getFormType() == 'Loco'){
-				
-				return true;
-				
+				}else{
+					
+					displayPendingCertsDialog(pendingGaps);
+					return false;
+					
+				}
+
 			}else{
 				
-				//3) Rule 1 Gages requirement
-				gageOneCount = await getGageOneCount();
-				if(gageOneCount !== rule_one_gage_min){
-					displayRuleGageErrorDialog(gageOneCount);
-					return false;
-				}else{
-					return true;
-				}
+				displayMissingOpportunityErrorDialog(missingOpportunityCount);
 				
 			}
-	
 		}else{
 			
-			displayPendingCertsDialog(pendingGaps);
-			return false;
+			displayMissingComplianceErrorDialog(missingComplianceCount);
 			
 		}
 		
 	}else{
 		
-		displayNoAssessmentDataDialog();
-		return false;
+		displayMissingSelectionsErrorDialog(missingSelections);
 		
 	}
 
@@ -1662,6 +1684,7 @@ async function validateAssessment(){
 /**
 *
 *	Determine if the assessment form has data entered
+*	NOTE: No longer used due to additional form validation
 *
 **/
 async function doesFormContainData(){
@@ -1713,6 +1736,66 @@ async function getGageOneCount(){
 	
 	let records = await store.runAction(currentSession, payload);
 	return records.items('results', 'Result Set').toJS().rows[0][0];
+}
+
+/**
+*
+*	This function counts the number of missing opportunity and compliance selections
+*
+**/
+function missingComplianceSelections(){
+
+	var missingSelections = 0;
+	for(var i=0;  i < form_questions.length; i++){		
+		if(form_questions[i][6] == 'compliance'){
+			
+			if(!$('#' + form_questions[i][5] + '_check:checked').val())
+				missingSelections++;
+			
+		}
+	}	
+	return missingSelections;
+}
+
+function missingComplianceFindings(){
+
+	var missingFindings = 0;
+	for(var i=0;  i < form_questions.length; i++){		
+		if(form_questions[i][6] == 'compliance'){
+			
+			//Check compliance checks for findings
+			if($('#' + form_questions[i][5] + '_check:checked').val() == 'compliance'){
+				if(!$('#' + form_questions[i][5] + '_findings').val())
+					missingFindings++;
+			}
+				
+			
+		}
+	}	
+	return missingFindings;
+	
+}
+
+function missingOpportunityFields(){
+
+	var missingFields = 0;
+	for(var i=0;  i < form_questions.length; i++){		
+		if(form_questions[i][6] == 'compliance'){
+			
+			//Check compliance checks for findings
+			if($('#' + form_questions[i][5] + '_check:checked').val() == 'opportunity'){
+				if(!$('#' + form_questions[i][5] + '_findings').val() || 
+				   !$('#' + form_questions[i][5] + '_corrective_action').val() || 
+				   !$('#' + form_questions[i][5] + '_champion').val() || 
+				   !$('#' + form_questions[i][5] + '_timeframe').val())
+					missingFields++;
+			}
+				
+			
+		}
+	}	
+	return missingFields;
+	
 }
 
 /**
@@ -1812,6 +1895,51 @@ function displayRuleGageErrorDialog(currentCount){
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Rule 1 Gages');
 	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">Rule 1 Gages require ' + rule_one_gage_min + ' unique assets. ' + currentCount + ' have been entered.</div>');
+	$('#approve_assessment_modal').modal('show');
+	
+}
+
+/**
+*
+*	Dialog: Opportunity/Compliance radios not selected
+*
+**/
+function displayMissingSelectionsErrorDialog(countMissing){
+	
+	$('#approveAssessmentButton').prop('disabled', true);
+	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
+	$('#approveAssessmentHeader').empty().append('Missing Selections');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All compliance/opportunity questions must be selected.<br>' + countMissing + ' have no selections.</div>');
+	$('#approve_assessment_modal').modal('show');
+	
+}
+
+/**
+*
+*	Dialog: Compliance has no findings
+*
+**/
+function displayMissingComplianceErrorDialog(countMissing){
+	
+	$('#approveAssessmentButton').prop('disabled', true);
+	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
+	$('#approveAssessmentHeader').empty().append('Findings Missing for Compliance');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked in compliance must have findings filled out.<br>' + countMissing + ' are missing.</div>');
+	$('#approve_assessment_modal').modal('show');
+	
+}
+
+/**
+*
+*	Dialog: Opportunity missing field data
+*
+**/
+function displayMissingOpportunityErrorDialog(countMissing){
+	
+	$('#approveAssessmentButton').prop('disabled', true);
+	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
+	$('#approveAssessmentHeader').empty().append('Opportunities Missing Details');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked as opportunities must have findings, corrective action, champion, and time frame filled out.<br>' + countMissing + ' items are missing these fields.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }
