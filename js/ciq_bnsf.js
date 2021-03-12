@@ -65,12 +65,33 @@ function loadSelectionData(){
 
 	appInit().then ( session => {
 		  currentSession = session;
+		  //setSessionTimeout();
 		  loadADPData();
 		  loadAssessors();
 		  loadFormTypes();
 		  document.querySelector("#form_date").valueAsDate = new Date();
 	}).catch( err => handleError(err));
 
+}
+
+/**
+*
+*	Expand the default CAS timeout
+*
+**/
+function setSessionTimeout(){
+
+	console.log('start timeout setting');
+	timeout={'timeOut': '300'};
+	let payload = {
+		action: 'sessionProp.setSessOpt',
+		data  : timeout
+	}	
+
+	store.runAction(currentSession, timeout).then ( r => {
+		console.log(r);
+	}).catch(err => handleError(err))
+	
 }
 
 /**
@@ -1601,10 +1622,15 @@ async function approveAssessment(){
 		displayAssessmentConfirmDialog();
 }
 
+/**
+*
+*	Determine if all required form fields have been completed
+*
+**/
 async function checkRequiredFields(){
 	
 	if(await validateAssessment()){
-		console.log('Form Complete');
+		displayFormValidatedDialog();
 	}
 	
 }
@@ -1955,6 +1981,16 @@ function displayNoAssessmentDataDialog(){
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Assessment Data Missing');
 	$('#approveAssessmentBody').empty().append('<div class="alert alert-warning">No data has been entered for this assessment.</div>');
+	$('#approve_assessment_modal').modal('show');
+	
+}
+
+function displayFormValidatedDialog(){
+	
+	$('#approveAssessmentButton').prop('disabled', true);
+	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
+	$('#approveAssessmentHeader').empty().append('Form Complete');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-info">All required form fields have been completed.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }
