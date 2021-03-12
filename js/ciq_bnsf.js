@@ -1579,10 +1579,13 @@ function isReadyForApproval(){
 	if(isFormComplete() && getAssessmentStatus() == 'pending'){
 		
 		$('#approval_button').prop('disabled', false);
+		$('#validate_button').prop('disabled', false);
+		
 		
 	}else{
 		
 		$('#approval_button').prop('disabled', true);
+		$('#validate_button').prop('disabled', true);
 		
 	}
 
@@ -1598,65 +1601,67 @@ async function approveAssessment(){
 		displayAssessmentConfirmDialog();
 }
 
+async function checkRequiredFields(){
+	
+	if(await validateAssessment()){
+		console.log('Form Complete');
+	}
+	
+}
+
 /**
 *
 *	This code determines if an assessment is ready to be approved. Several rules currently
-*	1) Validate that at least one row of data has been entered for the assessment
-*	2) Make sure all Gap assets have a yes/no for certifications available
-*	3) Enforce a selection of 21 assets for Rule-1 Gages
-*	4) Display confirmation dialog and require name and date to be entered
+*	The general flow is 
+*	1) A rule is checked 
+*	2) If the rule fails a specific message is displayed to the user 
+*	3) If the rule passes, it goes on to the next rule
+*	4) Keeps going until all rules are satisfied
 *
 **/
 async function validateAssessment(){
 	
+	//RULE 1) Make sure compliance and opportunities have all been selected
 	var missingSelections = missingComplianceSelections();
 	if(missingSelections == 0){
 		
+		//RULE 2) If something is marked as compliance, it needs the findings completed
 		var missingComplianceCount = missingComplianceFindings();
 		if(missingComplianceCount == 0){
 
+			//RULE 3) If something is marked as opportunity, it needs findings, corrective action, champion, and timeframe completed
 			var missingOpportunityCount = missingOpportunityFields();
 			if(missingOpportunityCount == 0){
-			
-				//1) Make sure the form has data
-				if(await doesFormContainData()){
+
+				//RULE 4) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are
+				pendingGaps = await getPendingCertifications();
+				if(pendingGaps.length == 0){
 					
-					//2) Make sure all of the certificates are Yes or No. No pending values. If we have pendings, show where they are
-					pendingGaps = await getPendingCertifications();
-					if(pendingGaps.length == 0){
+					//If form type is Loco, no need to worry about Rule 1 Gages
+					if(getFormType() == 'Loco'){
 						
-						//If form type is Loco, no need to worry about Rule 1 Gages
-						if(getFormType() == 'Loco'){
-							
-							return true;
-							
-						}else{
-							
-							//3) Rule 1 Gages requirement
-							gageOneCount = await getGageOneCount();
-							if(gageOneCount !== rule_one_gage_min){
-								displayRuleGageErrorDialog(gageOneCount);
-								return false;
-							}else{
-								return true;
-							}
-							
-						}
-				
+						return true;
+						
 					}else{
 						
-						displayPendingCertsDialog(pendingGaps);
-						return false;
+						//RULE 5) Rule 1 Gages requirement (see global variable rule_one_gage_min
+						gageOneCount = await getGageOneCount();
+						if(gageOneCount !== rule_one_gage_min){
+							displayRuleGageErrorDialog(gageOneCount);
+							return false;
+						}else{
+							return true;
+						}
 						
 					}
-					
+			
 				}else{
 					
-					displayNoAssessmentDataDialog();
+					displayPendingCertsDialog(pendingGaps);
 					return false;
 					
 				}
-				
+
 			}else{
 				
 				displayMissingOpportunityErrorDialog(missingOpportunityCount);
@@ -1679,6 +1684,7 @@ async function validateAssessment(){
 /**
 *
 *	Determine if the assessment form has data entered
+*	NOTE: No longer used due to additional form validation
 *
 **/
 async function doesFormContainData(){
@@ -1903,7 +1909,7 @@ function displayMissingSelectionsErrorDialog(countMissing){
 	$('#approveAssessmentButton').prop('disabled', true);
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Missing Selections');
-	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All compliance/opportunity questions must be selected. ' + countMissing + ' have no selections.</div>');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All compliance/opportunity questions must be selected.<br>' + countMissing + ' have no selections.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }
@@ -1918,7 +1924,7 @@ function displayMissingComplianceErrorDialog(countMissing){
 	$('#approveAssessmentButton').prop('disabled', true);
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Findings Missing for Compliance');
-	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked in compliance must have findings filled out. ' + countMissing + ' are missing.</div>');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked in compliance must have findings filled out.<br>' + countMissing + ' are missing.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }
@@ -1933,7 +1939,7 @@ function displayMissingOpportunityErrorDialog(countMissing){
 	$('#approveAssessmentButton').prop('disabled', true);
 	$("#approveAssessmentButton").removeClass("btn-secondary btn-primary").addClass("btn-secondary");
 	$('#approveAssessmentHeader').empty().append('Opportunities Missing Details');
-	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked as opportunities must have findings, corrective action, champion, and time frame filled out. ' + countMissing + ' items are missing these fields.</div>');
+	$('#approveAssessmentBody').empty().append('<div class="alert alert-danger">All items marked as opportunities must have findings, corrective action, champion, and time frame filled out.<br>' + countMissing + ' items are missing these fields.</div>');
 	$('#approve_assessment_modal').modal('show');
 	
 }

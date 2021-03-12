@@ -48,9 +48,13 @@
 								<input type="text" readonly class="form-control" id="assessment_type" name="assessment_type">
 							</div>
 
-							<div class="col-md-3">
+							<div class="col-md-2">
 								<label for="form_date">Assessment Date</label>
 								<input type="date" required class="form-control" onchange="loadAssessment();" id="form_date" name="form_date">
+							</div>
+							
+							<div class="col-md-1 align-self-end ml-auto">
+								<button type="button" id="validate_button" onclick="checkRequiredFields();" class="btn btn-info btn-block" disabled>Form Completed?</button>
 							</div>
 
 						</div>
