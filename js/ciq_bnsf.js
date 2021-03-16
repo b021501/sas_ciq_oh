@@ -989,7 +989,7 @@ function checkCIQEpoch(){
 *	Load the TCMax data entry dialog for a selected station. Might be able to narrow this down in the future if TCMax can tie items to questions type (gage, fall, etc..)
 *
 **/
-function loadTCMaxForm(key){
+async function loadTCMaxForm(key){
 	
 	if(!isFormComplete()){
 
@@ -1003,49 +1003,72 @@ function loadTCMaxForm(key){
 			$("#gapGageOne").append('<b><i>Rule 1 gages require 21 unique assets</i></b>');
 		}
 		
-		params_query={'query': 'select distinct SerialNumber, itemId from ' + ciq_lib + '.' + tc_max_data + ' WHERE ShopCode=\'' + selectedStation + '\' order by SerialNumber, itemId'};
-		let payload = {
-			action: 'fedSql.execDirect',
-			data  : params_query
+		cleanupSelector('serial_select');
+		cleanupSelector('nsn_select');
+		$('#tcmax_tracking').empty();
+		$('#due_date').empty();
+		$('#storage_location').empty();
+		$('#asset_description').empty();
+		$("#assessment_comments").val('');
+		$('#serial_select').append('<option value="MISSING">Missing Serial</option>');
+		$('#nsn_select').append('<option value="MISSING">Missing NSN</option>');
+		
+		var serialNumbers = await getStationSerialNumbers();
+		var nsns = await getStationNSNumbers();
+		for(var i=0; i < serialNumbers.length; i++) {
+			var serialNumber = serialNumbers[i][0];
+			if(serialNumber.toString().trim() != '')
+			$('#serial_select').append('<option value="' + serialNumbers[i][0] + '">' + serialNumbers[i][0] + '</option>');
 		}
-		store.runAction(currentSession, payload).then ( r => {
-			var tc_max_result = r.items('results', 'Result Set').toJS().rows;
-			
-			cleanupSelector('serial_select');
-			cleanupSelector('nsn_select');
-			$('#tcmax_tracking').empty();
-			$('#due_date').empty();
-			$('#storage_location').empty();
-			$('#asset_description').empty();
-			$("#assessment_comments").val('');
-			
-			$('#serial_select').append('<option value="MISSING">Missing Serial</option>');
-			$('#nsn_select').append('<option value="MISSING">Missing NSN</option>');
-			
-			for(var i=0; i < tc_max_result.length; i++) {
-
-				var serialNumber = tc_max_result[i][0];
-				var nsNumber = tc_max_result[i][1];
-				
-				if(serialNumber.toString().trim() != '')
-					$('#serial_select').append('<option value="' + tc_max_result[i][0] + '">' + tc_max_result[i][0] + '</option>');
-				
-				if(nsNumber.toString().trim() != '')
-					$('#nsn_select').append('<option value="' + tc_max_result[i][1] + '">' + tc_max_result[i][1] + '</option>');
-				
-				
-			}
-			gapReadyToSubmit(false);
-			
-		}).catch(err => handleError(err))
+		for(var i=0; i < nsns.length; i++) {
+			var nsNumber = nsns[i][0];
+			if(nsNumber.toString().trim() != '')
+			$('#nsn_select').append('<option value="' + nsns[i][0] + '">' + nsns[i][0] + '</option>');
+		}
+		gapReadyToSubmit(false);
 
 		$('#gap_question_key').val(key);
 		generateGapTable(key);
 		$('#tcMaxForm').modal('show');
-		
 	}
 
+
 }
+
+/**
+*
+* Get a distinct list of serial numbers for a station
+*
+**/
+async function getStationSerialNumbers(){
+
+	serial_query={'query': 'select distinct SerialNumber from ' + ciq_lib + '.' + tc_max_data + ' WHERE ShopCode=\'' + getStation() + '\' order by SerialNumber'};
+	let payload = {
+		action: 'fedSql.execDirect',
+		data  : serial_query
+	}
+	
+	let records = await store.runAction(currentSession, payload);
+	return records.items('results', 'Result Set').toJS().rows;
+}
+
+/**
+*
+* Get a distinct list of NSN's for a station
+*
+**/
+async function getStationNSNumbers(){
+
+	nsn_query={'query': 'select distinct nsn from ' + ciq_lib + '.' + tc_max_data + ' WHERE ShopCode=\'' + getStation() + '\' order by nsn'};
+	let payload = {
+		action: 'fedSql.execDirect',
+		data  : nsn_query
+	}
+	
+	let records = await store.runAction(currentSession, payload);
+	return records.items('results', 'Result Set').toJS().rows;
+}
+
 
 
 /**
